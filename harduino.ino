@@ -13,6 +13,7 @@
 #include <Ethernet.h>
 #include <EthernetUdp.h>         // UDP library from: bjoern@cs.stanford.edu 12/30/2008
 
+const boolean DEBUG = false;
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -23,6 +24,7 @@ const unsigned int udp_port = 54545;      // local port to listen on
 
 IPAddress server_ip(50, 19, 129, 102);
 
+const long KEEP_ALIVE_INTERVAL =  1800000;
 unsigned long nextDeviceKeepAliveTime = 0;
 
 // buffers for receiving and sending data
@@ -37,11 +39,7 @@ volatile unsigned long nextServerAlarmUpdateTime = 0;
 
 // alarm activation
 #define ALARM_ACTIVATION_PIN 3
-const byte ALARM_ACTIVATION_THRESHOLD = 3;
-volatile int alarmActivations = 0;
-volatile unsigned long timeAtWhichAlarmBackToNormal = 0;
-const long ALARM_ACTIVATION_TIMEOUT = 10000;
-boolean alarmActivated = false;
+volatile boolean alarmActivationChanged = false;
 
 // pool depth
 #define POOL_DEPTH_SERIES_RESISTOR 470    
@@ -101,13 +99,10 @@ void setup() {
 void loop() {
   unsigned long currentTime = millis();
   if (currentTime >= nextServerAlarmUpdateTime) {
-    reportAlarmState(currentTime);
+    checkAlarmState(currentTime);
   }
-  if (alarmActivations > 0) {
-    //checkForAlarmActivation(currentTime);
-  }
-  if ((alarmActivated==true) && (currentTime >= timeAtWhichAlarmBackToNormal)) {
-    //alarmActivationOver();
+  if (alarmActivationChanged==true) {
+    checkForAlarmActivation(currentTime);
   }
   if (currentTime >= nextPoolSolenoidSwitch) {
 //    switchPoolSolenoid(currentTime);
@@ -116,8 +111,6 @@ void loop() {
 //    poolDepthCheck(currentTime);
   }
   
-  //check_simple(); alarm circuits
-  
   if (currentTime >= nextDeviceKeepAliveTime) {
       sendKeepAlive(currentTime);
   }
@@ -125,23 +118,21 @@ void loop() {
 }
 
 void sendKeepAlive(unsigned long currentTime) {
-  udp("a0", "1");
-  nextDeviceKeepAliveTime = currentTime + 30000;
+  udp("alarm_alive", "1");
+  nextDeviceKeepAliveTime = currentTime + KEEP_ALIVE_INTERVAL;
 }
 
 void udp(String sensor, String message) {
   String payload = sensor + " " + message;
   char p[50];
   payload.toCharArray(p, 50);
-  Udp.beginPacket(server_ip, udp_port);
-  Udp.write(p);
-  Udp.endPacket();
-}
-
-void check_simple() {
-  int simpleState = digitalRead(SIMPLE_PIN);
-  Serial.println( simpleState );
-
+  if (DEBUG==false) {
+    Udp.beginPacket(server_ip, udp_port);
+    Udp.write(p);
+    Udp.endPacket();
+  } else {
+    Serial.println(p);
+  }
 }
 
 void check_opto() {
@@ -201,90 +192,45 @@ void catch_alarm_change() {
 }
 
 void catch_alarm_activation() {
-  alarmActivations = alarmActivations + 1;
+  alarmActivationChanged = true;
 }
 
-void reportAlarmState(unsigned long currentTime) {
+void checkAlarmState(unsigned long currentTime) {
   
   // if this was triggered by an interrupt, debounce (pause for 50ms, and then check the state again)
   if (alarmChanged==true) {
-    delay(50);
     alarmChanged = false;
+    delay(50);
   }
   
   int alarmState = digitalRead(ALARM_PIN);
   String state;
   if (alarmState==1) {
-    state = "0";
-  } else {
     state = "1";
+  } else {
+    state = "0";
   }
-  udp("aa", state);
+  udp("alarm_armed", state);
   
-  //Serial.print(currentTime);
-  //Serial.print(": ");
-  //Serial.print(alarmState);
-  //Serial.print(" and the alarm is going off: ");
-  //Serial.println(alarmActivated);
   nextServerAlarmUpdateTime = currentTime + ALARM_UPDATE_INTERVAL;
   
 }
 
 void checkForAlarmActivation(unsigned long currentTime) {
-  delay(500);
-  if (alarmActivations>ALARM_ACTIVATION_THRESHOLD) {
-    if (alarmActivated==false) {
-      Serial.println("Alarm going off");
-    }
-    alarmActivated = true;
-    timeAtWhichAlarmBackToNormal = currentTime + ALARM_ACTIVATION_TIMEOUT;
+  
+  // this was triggered by an interrupt. debounce (pause for 50ms, and then check the state again)
+  alarmActivationChanged = false;
+  delay(50);
+  
+  int activation = digitalRead(ALARM_ACTIVATION_PIN);
+  String state;
+  if (activation==1) {
+    state = "1";
+  } else {
+    state = "0";
   }
-  alarmActivations = 0;
+  udp("alarm_activated", state);
+  
 }
-
-void alarmActivationOver() {
-  alarmActivated = false;
-  Serial.println("Alarm no longer going off");
-}
-
-/*
-  Processing sketch to run with this example
- =====================================================
- 
- // Processing UDP example to send and receive string data from Arduino 
- // press any key to send the "Hello Arduino" message
- 
- 
- import hypermedia.net.*;
- 
- UDP udp;  // define the UDP object
- 
- 
- void setup() {
- udp = new UDP( this, 6000 );  // create a new datagram connection on port 6000
- //udp.log( true ); 		// <-- printout the connection activity
- udp.listen( true );           // and wait for incoming message  
- }
- 
- void draw()
- {
- }
- 
- void keyPressed() {
- String ip       = "192.168.1.177";	// the remote IP address
- int port        = 8888;		// the destination port
- 
- udp.send("Hello World", ip, port );   // the message to send
- 
- }
- 
- void receive( byte[] data ) { 			// <-- default handler
- //void receive( byte[] data, String ip, int port ) {	// <-- extended handler
- 
- for(int i=0; i < data.length; i++) 
- print(char(data[i]));  
- println();   
- }
- */
 
 
