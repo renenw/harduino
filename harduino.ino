@@ -22,7 +22,7 @@ byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 IPAddress local_ip(192, 168, 0, 200);
 const unsigned int udp_port = 54545;      // local port to listen on
 
-IPAddress server_ip(50, 19, 129, 102);
+IPAddress server_ip(192, 168, 0, 252);
 
 const long KEEP_ALIVE_INTERVAL =  1800000;
 unsigned long nextDeviceKeepAliveTime = 0;
