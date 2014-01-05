@@ -59,12 +59,12 @@ float read_temp(void) {   //the read temperature function
 void sendPoolTemperature(unsigned long currentTime) {
   float temp;
   temp = read_temp();       //call the function “read_temp” and return the temperature in C°
-  udp_float("pool_temperature", temp);
+  udp_float("temperature_pool", temp);
   nextTemperatureUpdate = currentTime + TEMPERATURE_UPDATE_INTERVAL;
 }
 
 void sendKeepAlive(unsigned long currentTime) {
-  udp("pool_temperature_alive", "1");
+  udp("temperature_pool_alive", "1");
   nextDeviceKeepAliveTime = currentTime + KEEP_ALIVE_INTERVAL;
 }
 
