@@ -16,6 +16,7 @@ const unsigned int udp_port = 54545;      // local port to listen on
 IPAddress server_ip(192, 168, 0, 252);
 
 const long KEEP_ALIVE_INTERVAL =  180000;
+// const long KEEP_ALIVE_INTERVAL =  5000;
 unsigned long nextDeviceKeepAliveTime = 0;
 
 // buffers for receiving and sending data
@@ -41,14 +42,14 @@ byte colPins[COLS] = {8, 7, 6};        //connect to the column pinouts of the ke
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
-const int TIME_OUT_DURATION = 3000;
-const int LOCK_OPEN_DURATION = 250;
+const int TIME_OUT_DURATION = 5000;
+const int LOCK_OPEN_DURATION = 750;
 unsigned long timeout = 0;
 String keyPresses = "";
 
 const int PASSWORDS = 6;
-String passwords[PASSWORDS] = { "0909", "0504", "0805", "2907", "1234", "4321" };
-String who[PASSWORDS]       = { "Renen", "Ros", "Sofie", "Finn", "Josephine", "ADT" };
+String passwords[PASSWORDS] = { "0909", "0504", "0805", "2907", "4320", "4267" };
+String who[PASSWORDS]       = { "Renen", "Ros", "Sofie", "Finn", "Sniper", "Nicolene" };
 
 const int GATE_LOCK_PIN = 9;
 
@@ -77,7 +78,7 @@ void loop() {
   
   char key = keypad.getKey();
   if (key) {
-    //Serial.println(key);
+    Serial.println(key);
     timeout = currentTime + TIME_OUT_DURATION;
     if (key=='#') {
       if (keyPresses.length()>0) {
