@@ -8,7 +8,7 @@ http://www.sainsmart.com/8-channel-dc-5v-relay-module-for-arduino-pic-arm-dsp-av
 */
 
 const boolean DEBUG = false;
-const String DEVICE_NAME = "swicher";
+// const String DEVICE_NAME = "switcher";
 
 const int SWITCHES = 16;
 const int switchPinMapping[SWITCHES] = {22, 24, 26, 28, 30, 32, 34, 36,  23, 25, 27, 29, 31, 33, 35, 37};
