@@ -8,7 +8,7 @@ http://www.sainsmart.com/8-channel-dc-5v-relay-module-for-arduino-pic-arm-dsp-av
 */
 
 const boolean DEBUG = false;
-const String DEVICE_NAME = "switcher";
+const String DEVICE_NAME = "swicher";
 
 const int SWITCHES = 16;
 const int switchPinMapping[SWITCHES] = {22, 24, 26, 28, 30, 32, 34, 36,  23, 25, 27, 29, 31, 33, 35, 37};
@@ -21,8 +21,8 @@ IPAddress localIp(192, 168, 0, 203);
 const unsigned int udp_port = 54545;
 IPAddress server_ip(192, 168, 0, 252);
 
-const long KEEP_ALIVE_INTERVAL =  180000;
-// const long KEEP_ALIVE_INTERVAL =  5000;
+// const long KEEP_ALIVE_INTERVAL =  180000;
+const long KEEP_ALIVE_INTERVAL =  30000;
 unsigned long nextDeviceKeepAliveTime = 0;
 
 // buffers for receiving and sending data
@@ -48,11 +48,17 @@ int deEnergise = -1;
 unsigned long energiseDuration = -1;
 unsigned long DEFAULT_ENERGISE_DURATION = 20*60;
 
+// keep board light blinking
+int BLINK_DURATION = 2500;
+boolean blinkOn = false;
+unsigned long blinkChangeAt = 0;
+
 void setup() {                
   Serial.begin(9600);
   logLn("starting");
   initialisePins();
   initialiseNetwork();
+  pinMode(LED_BUILTIN, OUTPUT);
   logLn("initialisation complete");
 }
 
@@ -63,6 +69,7 @@ void loop() {
   if (deEnergise!=-1) { handleDeEnergiseInstruction(); }
   deEnergiseRelaysThatHaveTimedOut();
   dealWithWebRequests();
+  if (currentTime >= blinkChangeAt) { blinkLight(currentTime); }
   if (currentTime >= nextDeviceKeepAliveTime) { sendKeepAlive(currentTime); }
 }
 
@@ -72,9 +79,9 @@ String handle_web_request(EthernetClient client, String request) {
   if (spaceTerminator!=-1) {
     request = request.substring(0, spaceTerminator);
   }
-  if ( request.startsWith("PUT /on") || (DEBUG && (request.startsWith("GET /on"))) ) {
+  if ( request.startsWith("PUT /on") || request.startsWith("GET /on") ) {
     outcome = web_put_on(client, request);
-  } else if ( request.startsWith("PUT /off") || (DEBUG && (request.startsWith("GET /off"))) ) {
+  } else if ( request.startsWith("PUT /off") || request.startsWith("GET /off") ) {
     outcome = web_put_off(client, request);
   } else if ( DEBUG && (request.startsWith("GET /test")) ) {
     outcome = web_handle_test_request(client);
@@ -162,7 +169,7 @@ void runSelfTestNetwork() {
 void runSelfTestPins() {
   for (int n = 0; n < SWITCHES; n++) {
     energiseRelay(n);
-    delay(500);
+    delay(1000);
     deEnergiseRelay(n);
     delay(100);
   }
@@ -394,6 +401,16 @@ long getDurationFromQueryString(String request) {
     energiseFor = duration.toInt();
   }
   return energiseFor;
+}
+
+void blinkLight(unsigned long currentTime) {
+  if (blinkOn) {
+    digitalWrite(LED_BUILTIN, HIGH);
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+  blinkOn = !blinkOn;
+  blinkChangeAt = currentTime + BLINK_DURATION;
 }
 
 void sendKeepAlive(unsigned long currentTime) {
