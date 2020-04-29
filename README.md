@@ -1,6 +1,19 @@
 harduino
 ========
+hard. as in difficult. hardware is not intuitive to me!
 
-a simple Arduino sketch for monitoring my alarm and pool, and filling the pool when needed. events to be pushed, using UDP, into the renenw/h3 project.
+This project groups a collection of Arduino sketches that run on a small collection of devices around my home:
+Sketch | Description
+-------- | -----
+`access_manager` | Interacts with a pin pad and opens the gate if a valid pin is entered.
+`alarm_monitor` | Watches the LED's on our home alarm system to understand the status of the home alarm.
+`pool_temperature` | Detects and reports the pool temperature.
+`rain_guage`|Tracks closures on a rain gauge. The maths is offloaded to an AWS lambda.
+`switch`|Reacts to HTTP requests to switch on (and off) 24V current to activate irrigation solenoids.
 
-the hardware is in place to manage gate access as well. this will require a second arduino, so, in due course, this code will need to be generalised to support multiple devices.
+## Code
+The sketches all report an "alive" status via UDP.
+
+All messages are relayed to an AWS Gateway endpoint using the code [here](https://github.com/renenw/relay).
+
+None of the sketches are particularly complex.
