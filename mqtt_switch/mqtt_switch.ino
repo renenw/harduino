@@ -15,6 +15,9 @@ const int SWITCHES = 16;
 const int switchPinMapping[SWITCHES] = {22, 24, 26, 28, 30, 32, 34, 36,  23, 25, 27, 29, 31, 33, 35, 37};
 const int LED = 13;
 
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xDE };
+IPAddress localIp(192, 168, 0, 203);
+
 EthernetClient ethClient;
 PubSubClient mqttClient(ethClient);
 
@@ -100,7 +103,7 @@ void initialisePins() {
     deEnergiseAt[n] = 0;
   }
   pinMode(LED, OUTPUT);
-  Serial.println("pin initialisation complete");
+  Serial.println("Pin initialisation complete");
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -157,8 +160,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void initialiseNetwork() {
+  Ethernet.begin(mac,localIp);
+  Serial.println("Device has ip address ");
+  Serial.println(Ethernet.localIP());
+  Serial.println("Ethernet initialisation complete");
+}
+
+void initialiseMqtt() {
   mqttClient.setServer("192.168.0.245", 1883);
   mqttClient.setCallback(callback);
+  Serial.println("Basic MQTT configuration complete.");
   connect();
 }
 
@@ -185,7 +196,7 @@ void connect() {
       mqttClient.subscribe("switcher/14");
       mqttClient.subscribe("switcher/15");
     } else {
-      Serial.println(" try again in 5 seconds");
+      Serial.println("Failed to connect. Will retry in 5 seconds.");
       delay(5000);
     }
   }
